@@ -17,9 +17,11 @@ namespace DigiHash
             {
                 var cpu = new CPU()
                 {
-                    Model = mo["Name"].ToString(),
-                    Manufacturer = mo["Manufacturer"].ToString(),
-                    Clock = Convert.ToInt32(mo["MaxClockSpeed"])
+                    Model = mo["Name"].ToString().Trim(),
+                    Manufacturer = mo["Manufacturer"].ToString().Trim(),
+                    Clock = Convert.ToInt32(mo["MaxClockSpeed"]),
+                    NumberOfCores = Convert.ToInt32(mo["NumberOfCores"]),
+                    NumberOfLogicalProcessors = Convert.ToInt32(mo["NumberOfLogicalProcessors"]),
                 };
                 cpus.Add(cpu);
             }
@@ -36,8 +38,8 @@ namespace DigiHash
             {
                 var gpu = new GPU()
                 {
-                    Model = mo["Name"].ToString(),
-                    Manufacturer = mo["AdapterCompatibility"].ToString(),
+                    Model = mo["Name"].ToString().Trim(),
+                    Manufacturer = mo["AdapterCompatibility"].ToString().Trim(),
                 };
                 gpus.Add(gpu);
             }
@@ -55,10 +57,11 @@ namespace DigiHash
     public class CPU:Device
     {
         public int Clock { get; set; }
+        public int NumberOfCores { get; set; }
+        public int NumberOfLogicalProcessors { get; set; }
     }
 
     public class GPU : Device
     {
-
     }
 }

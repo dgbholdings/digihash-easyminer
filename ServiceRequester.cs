@@ -16,8 +16,8 @@ namespace DigiHash
         {
             var client = new HttpClient()
             {
-                //BaseAddress = new Uri("http://dev-window.cloudapp.net:3000")
-                BaseAddress = new Uri("https://digihash-pickaxe-backend.herokuapp.com")
+                BaseAddress = new Uri("http://dev-window.cloudapp.net:3000")
+                //BaseAddress = new Uri("https://digihash-pickaxe-backend.herokuapp.com")
             };
 
             client.DefaultRequestHeaders.Accept.Clear();
@@ -60,7 +60,7 @@ namespace DigiHash
                     if (response.IsSuccessStatusCode)
                         success(content);
                     else
-                        fail(string.Format("Error Code: {0}, Message: {1}", response.StatusCode, content));
+                        fail(content);
                 }
                 catch (Exception exception)
                 {

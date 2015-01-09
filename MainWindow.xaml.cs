@@ -37,40 +37,49 @@ namespace DigiHash
             InitializeComponent();
             this.Paragraph = new Paragraph() { Margin = new Thickness(0, 0, 0, 0) };
             this.OutputRichTextBox.Document.Blocks.Add(this.Paragraph);
-            this.IniaitalizeData();
+            this.Output(MessageType.System, string.Format("{0} Version {1}\n", this.Title, Assembly.GetEntryAssembly().GetName().Version));
 
-            this.WalletButton.Click += (sender, eventArgs) => this.ShowWalletDialog();
-            this.StartButton.Click += (sender, eventArgs) => this.Start();
-            this.StopButton.Click += (sender, eventArgs) => this.Stop();
+            this.PreferenceButton.Click += (sender, eventArgs) => this.ShowPreferenceDialog();
+            this.ActionButton.Click += (sender, eventArgs) =>
+                {
+                    if (this._dataSource == null || this._dataSource.Algorithms == null)
+                        MessageBox.Show("Please wait for retrieving data from server!", this.Title, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    else if (this._dataSource.Preference == null || !this._dataSource.Preference.IsValid)
+                        this.ShowPreferenceDialog();
+                    else
+                    {
+                        if (this._dataSource.Started)
+                            this.Stop();
+                        else
+                            this.Start();
+                    }
+                };
             this.Closing += (sender, eventArgs) =>
                 {
                     this.Stop();
                     eventArgs.Cancel = this._dataSource.Miner != null;
                 };
-            this.Loaded += (sender, eventArgs) => this.RetrieveData("Retrieving data from server", true, "algorithms/gets", null, 
-                                                                     json => this._dataSource.Algorithms = JsonConvert.DeserializeObject<Algorithm[]>(json));
-            this.AlgorithmComboBox.SelectionChanged += (sender, eventArgs) =>
-                {
-                    if (this.AlgorithmComboBox.SelectedItem != null)
-                    {
-                        var algorithm = (Algorithm)this.AlgorithmComboBox.SelectedItem;
-                    }
-                };
+            this.Loaded += (sender, eventArgs) => this.RetrieveData("Retrieving data from server", true, "algorithms/gets", null,
+                                                                     json =>
+                                                                     {
+                                                                         var algorithms = JsonConvert.DeserializeObject<Algorithm[]>(json);
+                                                                         this.IniaitalizeData(algorithms);
+                                                                     });
 
         }
 
         private Paragraph Paragraph { get; set; }
 
-        private void ShowWalletDialog()
+        private void ShowPreferenceDialog()
         {
-            var dialog = new WalletDialog();
-            this._dataSource.Wallets = dialog.Show(this._dataSource.Wallets);
-            this.Execute(MessageType.System, "Saving " + Wallet.FileName, true,
-            () =>
+            var dialog = new PreferenceDialog();
+            var perference = dialog.Show(this._dataSource.Preference, this._dataSource.Algorithms);
+            if (perference != null)
             {
-                var json = JsonConvert.SerializeObject(this._dataSource.Wallets);
-                File.WriteAllText(this.GetFullPath(Wallet.FileName), json);
-            });
+                this._dataSource.Preference = perference;
+                if (this._dataSource.Preference.IsValid)
+                    this.SavePreference();
+            }
         }
 
         private void Stop()
@@ -101,48 +110,94 @@ namespace DigiHash
             });
         }
 
+        private bool SavePreference()
+        {
+            return this.Execute(MessageType.System, "Saving preference", true, () =>
+            {
+                var json = JsonConvert.SerializeObject(this._dataSource.Preference);
+                File.WriteAllText(this.GetFullPath(Preference.FileName), json);
+
+                return true;
+            });
+        }
+
         private void Start()
         {
             this._dataSource.Started = true;
-
-            var algorithm = (Algorithm)this.AlgorithmComboBox.SelectedItem;
-            var wallet = (Wallet)this.WalletComboBox.SelectedItem;
-            //Save Profile
-            var result = this.Execute(MessageType.System, "Saving profile", true, () =>
-                {
-                    var json = JsonConvert.SerializeObject(this._dataSource.Profile);
-                    File.WriteAllText(this.GetFullPath(Profile.FileName), json);
-
-                    return true;
-                });
-
-            if (result)
+            var result = true;
+            Task.Run(() =>
             {
-                Task.Run(() =>
+                var cpus = this.Execute(MessageType.System, "Getting CPU info", true, () => Hardware.GetCPUs());
+                var gpus = this.Execute(MessageType.System, "Getting GPU info", true, () => Hardware.GetGPUs());
+
+                var spec = new
                 {
-                    var cpus = this.Execute(MessageType.System, "Getting CPU info", true, () => Hardware.GetCPUs());
-                    var gpus = this.Execute(MessageType.System, "Getting GPU info", true, () => Hardware.GetGPUs());
-
-                    var spec = new
+                    algorithm = this._dataSource.Preference.Algorithm,
+                    username = this._dataSource.Preference.Wallet,
+                    platform = new
                     {
-                        algorithm = algorithm.Name,
-                        username = wallet.Address,
-                        platform = new
-                        {
-                            name = "WINDOWS_X" + (Environment.Is64BitOperatingSystem ? "64" : "32"),
-                            version = string.Format("{0}.{1}", Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor)
-                        },
-                        cpu = cpus.Select(current => new { name = current.Model, clock = current.Clock, manufacturer = current.Manufacturer }).First(),
-                        gpu = gpus.Select(current => new { name = current.Model, manufacturer = current.Manufacturer }).First(),
-                    };
+                        name = "WINDOWS_X" + (Environment.Is64BitOperatingSystem ? "64" : "32"),
+                        version = string.Format("{0}.{1}", Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor)
+                    },
+                    cpu = cpus.Select(current => new
+                    {
+                        name = current.Model,
+                        clock = current.Clock,
+                        manufacturer = current.Manufacturer,
+                        number_of_cores = current.NumberOfCores,
+                        number_of_logical_processors = current.NumberOfLogicalProcessors,
+                    }).First(),
+                    gpu = gpus.Select(current => new { name = current.Model, manufacturer = current.Manufacturer }).First(),
+                };
 
-                    this.PostData("Analyzing hardware from server", true, "MinerConfigs/analyze", JsonConvert.SerializeObject(new { spec }),
-                        json =>
+                this.PostData("Analyzing hardware from server", true, "MinerConfigs/analyze", JsonConvert.SerializeObject(new { spec }),
+                    json =>
+                    {
+                        var config = JsonConvert.DeserializeObject<MinerConfig>(json);
+                        var miner = string.Format("Miner: {0}, Version: {1}", config.Miner, config.Version);
+                        this.Output(MessageType.System, miner + "\n");
+                        
+                        var save = config.ID != this._dataSource.Preference.ConfigID;
+                        if (config.Device == MinerDevice.GPU && !string.IsNullOrEmpty(config.SDK_URL))
                         {
-                            var config = JsonConvert.DeserializeObject<MinerConfig>(json);
-                            var miner = string.Format("Miner: {0}, Version: {1}", config.Miner, config.Version);
-                            this.Output(MessageType.System, miner + "\n");
+                            if (!this._dataSource.Preference.InstalledSDK)
+                            {
+                                var dialogResult = MessageBox.Show("Do you has video card SDK install?", "Install SDK", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                                if (dialogResult == MessageBoxResult.No)
+                                {
+                                    result = false;
+                                    this.Execute(MessageType.System, "No video card SDK install. Goto the follow URL to download SDK\n" + config.SDK_URL + "\n", false,
+                                        () =>
+                                        {
+                                            try
+                                            {
+                                               Process.Start(config.SDK_URL);
+                                            }
+                                            catch (Win32Exception)
+                                            {
+                                                // System.ComponentModel.Win32Exception is a known exception that occurs when Firefox is default browser.  
+                                                // It actually opens the browser but STILL throws this exception so we can just ignore it.  If not this exception,
+                                                // then attempt to open the URL in IE instead.
+                                                Process.Start(new ProcessStartInfo("IExplore.exe", config.SDK_URL));
+                                            }
+                                        });
+                                }
+                                else
+                                {
+                                    this._dataSource.Preference.InstalledSDK = true;
+                                    save = true;
+                                }
+                            }
+                        }
 
+                        if (save)
+                        {
+                            this._dataSource.Preference.ConfigID = config.ID;
+                            result = this.SavePreference();
+                        }
+
+                        if (result)
+                        {
                             //Check the miner exist or not
                             result = false;
                             var rootPath = this.GetFullPath(MinerConfig.RootPath);
@@ -156,7 +211,7 @@ namespace DigiHash
 
                                 //Download miner
                                 var localFile = System.IO.Path.Combine(localPath, config.SourceFile);
-                                result = this.Execute(MessageType.System, "Download", true, () =>
+                                result = this.Execute(MessageType.System, "Downloading", true, () =>
                                 {
                                     switch (config.Source_Protocol)
                                     {
@@ -202,6 +257,7 @@ namespace DigiHash
                             {
                                 result = this.Execute(MessageType.System, "Starting Mining\n", false, () =>
                                 {
+                                    this.Output(MessageType.System, "Arguments: " + config.Parameters + "\n");
                                     this._dataSource.Miner = new Process();
                                     this._dataSource.Miner.StartInfo.WorkingDirectory = localPath;
                                     this._dataSource.Miner.StartInfo.Arguments = config.Parameters;
@@ -227,18 +283,33 @@ namespace DigiHash
                                     this._dataSource.Miner.BeginErrorReadLine();
                                     this._dataSource.Miner.WaitForExit();
 
-                                    return true;
+                                    return false;
                                 });
 
-                                if (!result)
+                                if (this._dataSource.Miner != null)
                                     this.ForceStop();
                             }
                             else
                                 this._dataSource.Started = false;
-                        },
-                        error => this._dataSource.Started = false);
-                });
-            }
+                        }
+                        else
+                            this._dataSource.Started = false;
+                    },
+                    json => 
+                        {
+                            this.Execute(MessageType.Error, "Server error:", false, () =>
+                                {                                    
+                                    var info = JsonConvert.DeserializeObject<NoMatchConfig>(json);                                    
+                                    if (this._dataSource.Preference.ConfigID != info.ID)
+                                    {
+                                        this._dataSource.Preference.ConfigID = info.ID;
+                                        this.SavePreference();
+                                    }
+                                    this.Output(MessageType.Error, info.Message);
+                                    this.ForceStop();
+                                });
+                        });
+            });
         }
 
         private string GetFullPath(string filename)
@@ -250,38 +321,25 @@ namespace DigiHash
             return System.IO.Path.Combine(root, filename);
         }
 
-        private void IniaitalizeData()
-        {
-            this.Output(MessageType.System, string.Format("{0} Version {1}\n", this.Title, Assembly.GetEntryAssembly().GetName().Version));
+        private void IniaitalizeData(Algorithm[] algoritms)
+        {            
             this.Output(MessageType.System, "Initialize....\n");
-            this._dataSource = new DataSource();
+            this._dataSource = new DataSource() { Algorithms = algoritms };
             this.DataContext = this._dataSource;
 
-            var fileName = this.GetFullPath(Wallet.FileName);
+            var fileName = this.GetFullPath(Preference.FileName);
             if (File.Exists(fileName))
             {
-                this._dataSource.Wallets = this.Execute(MessageType.System, "Reading " + Wallet.FileName, true,
+                this._dataSource.Preference = this.Execute(MessageType.System, "Reading " + Preference.FileName, true,
                     () =>
                     {
                         var json = File.ReadAllText(fileName);
-                        return JsonConvert.DeserializeObject<Wallet[]>(json);
+                        return JsonConvert.DeserializeObject<Preference>(json);
                     });
             }
-            else
-                this.ShowWalletDialog();
 
-            fileName = this.GetFullPath(Profile.FileName);
-            if (File.Exists(fileName))
-            {
-                this._dataSource.Profile = this.Execute(MessageType.System, "Reading " + Profile.FileName, true,
-                    () =>
-                    {
-                        var json = File.ReadAllText(fileName);
-                        return JsonConvert.DeserializeObject<Profile>(json);
-                    });
-            }
-            else
-                this._dataSource.Profile = new Profile();
+            if (this._dataSource.Preference == null || string.IsNullOrEmpty(this._dataSource.Preference.Wallet) || string.IsNullOrEmpty(this._dataSource.Preference.Algorithm))
+                this.ShowPreferenceDialog();
         }
 
         private void TaskbarProgressState(TaskbarItemProgressState state)
@@ -312,10 +370,10 @@ namespace DigiHash
                     if (withStatus)
                         this.Output(MessageType.Error, "fail\n");
 
-                    this.Output(MessageType.Error, error + "\n");
-
                     if (fail != null)
                         fail(error);
+                    else
+                        this.Output(MessageType.Error, error + "\n");
                 });
         }
 
@@ -443,10 +501,9 @@ namespace DigiHash
         {
             private Algorithm[] _algorithms;
             private KeyValuePair<string, decimal>[] _difficulties;
-            private Wallet[] _wallets;
             private Process _miner;
             private bool _started;
-            private Profile _profile;
+            private Preference _preference;
 
             public bool Started
             {
@@ -468,22 +525,12 @@ namespace DigiHash
                 }
             }
 
-            public Profile Profile
+            public Preference Preference
             {
-                get { return this._profile; }
+                get { return this._preference; }
                 set
                 {
-                    this._profile = value;
-                    this.OnPropertyChange();
-                }
-            }
-
-            public Wallet[] Wallets
-            {
-                get { return this._wallets; }
-                set
-                {
-                    this._wallets = value;
+                    this._preference = value;
                     this.OnPropertyChange();
                 }
             }
@@ -512,67 +559,10 @@ namespace DigiHash
 
         public enum MessageType { System, Server, Mining, Error }
 
-        public class Profile
+        public class NoMatchConfig
         {
-            public const string FileName = "Profile.dat";
-
-            public string Wallet { get; set; }
-            public string Algorithm { get; set; }
-        }
-
-        public class Algorithm
-        {
-            public string Name { get; set; }
-        }
-
-        public enum Protocol { FTP, HTTP }
-
-        public class MinerConfig
-        {
-            public const string RootPath = "Miner";
-
-            public string Miner { get; set; }
-            public string Version { get; set; }
-            public string Execute_File { get; set; }
-            public string Parameters { get; set; }
-            public Protocol Source_Protocol { get; set; }
-            public string Source_Url { get; set; }
-            public string SourceHost
-            {
-                get
-                {
-                    var paths = this.Source_Url.Split('/');
-                    return paths.First();
-                }
-            }
-
-            public string SourceFullName
-            {
-                get
-                {
-                    var paths = this.Source_Url.Split('/');
-                    return string.Join("/", paths.Skip(1));
-                }
-            }
-
-            public string SourceFile
-            {
-                get
-                {
-                    var paths = this.Source_Url.Split('/');
-                    return paths.Last();
-                }
-            }
-
-            public string LocalPath
-            {
-                get
-                {
-                    var miner = this.Miner.Replace(':', '_').Replace('\\', '_');
-
-                    return string.Format(@"{0}\{1}\{2}", MinerConfig.RootPath, miner, this.Version);
-                }
-            }
+            public int ID { get;set; }
+            public string Message { get; set; }
         }
     }
 }
