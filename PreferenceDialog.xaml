@@ -1,0 +1,38 @@
+﻿<Window x:Class="DigiHash.PreferenceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="ToolWindow"
+        Title="Preference" Height="170" Width="400" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32" />
+            <RowDefinition Height="32" />
+            <RowDefinition Height="32" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Text="Wallet:" Grid.Row="0" Grid.Column="0" Margin="5"/>
+        <TextBox Text="{Binding Path=Preference.Wallet, Mode=TwoWay}"  Grid.Row="0" Grid.Column="1"  Margin="5"/>
+
+        <TextBlock Text="Algorithm:" Grid.Row="1" Grid.Column="0" Margin="5"/>
+        <ComboBox x:Name="AlgorithmComboBox" ItemsSource="{Binding Path=Algorithms}" Grid.Row="1" Grid.Column="1"  Margin="5" DisplayMemberPath="Name" SelectedValuePath="Name" 
+                  SelectedValue="{Binding Path=Preference.Algorithm, Mode=TwoWay}" UseLayoutRounding="False"/>
+
+        <TextBlock Text="Config ID:" Grid.Row="2" Grid.Column="0" Margin="5"/>
+        <Grid Grid.Row="2" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding Path=Preference.ConfigID, Mode=OneWay}"  Grid.Row="0" Grid.Column="0"  Margin="5" IsReadOnly="True"/>
+            <CheckBox IsChecked="{Binding Path=Preference.InstalledSDK, Mode=TwoWay}"  Grid.Row="0" Grid.Column="1"  Margin="5" VerticalAlignment="Center">Installed SDK</CheckBox>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="4" Grid.Column="1" Margin="5">
+            <Button x:Name="SaveButton" Content="Save" Width="50" />
+        </StackPanel>
+    </Grid>
+</Window>
