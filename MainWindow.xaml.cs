@@ -84,7 +84,7 @@ namespace DigiHash
 
         private void Stop()
         {
-            if (this._dataSource.Miner != null)
+            if (this._dataSource != null && this._dataSource.Miner != null)
             {
                 var result = MessageBox.Show("It will be stop the mining, are you sure?", "Terminal Mining",  MessageBoxButton.OKCancel, MessageBoxImage.Question);
                 if (result == MessageBoxResult.OK)
