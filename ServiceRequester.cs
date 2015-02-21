@@ -28,11 +28,17 @@ namespace DigiHash
             return client;
         }
 
-        public async void Get(string action, KeyValuePair<string, object>[] parameters, Action<string> success, Action<string> fail)
+        public async void Get(string action, KeyValuePair<string, string>[] parameters, Action<string> success, Action<string> fail)
         {
             using (var client = this.CreateClient())
             {                
-                //Concate parameter to action
+                //Concate parameter to action                
+                if (parameters != null)
+                {
+                    var content = new FormUrlEncodedContent(parameters);
+                    action = action + "?" + content.ReadAsStringAsync().Result;
+                }
+
                 try
                 {
                     var response = await client.GetAsync(action);

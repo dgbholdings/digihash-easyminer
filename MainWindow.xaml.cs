@@ -59,12 +59,40 @@ namespace DigiHash
                     this.Stop();
                     eventArgs.Cancel = this._dataSource.Miner != null;
                 };
-            this.Loaded += (sender, eventArgs) => this.RetrieveData("Retrieving data from server", true, "algorithms/gets", null,
-                                                                     json =>
-                                                                     {
-                                                                         var algorithms = JsonConvert.DeserializeObject<Algorithm[]>(json);
-                                                                         this.IniaitalizeData(algorithms);
-                                                                     });
+            this.Loaded += (sender, eventArgs) => 
+                {
+                    Task.Run(() =>
+                    {
+                        this.CPUs = this.Execute(MessageType.System, "Getting CPU info", true, () => Hardware.GetCPUs());
+                        this.GPUs = this.Execute(MessageType.System, "Getting GPU info", true, () => Hardware.GetGPUs());
+
+                        this.Execute(MessageType.Server, "Retrieving data from server", false, () =>
+                            {
+                                this.RetrieveData("- Algorithms", true, "algorithms/gets", null,
+                                    algorithmJson =>
+                                    {
+                                        var algorithms = JsonConvert.DeserializeObject<Algorithm[]>(algorithmJson);
+
+                                        var parameters = new List<KeyValuePair<string, string>>();
+                                        parameters.Add(new KeyValuePair<string, string>("device", MinerDevice.GPU.ToString()));
+                                        parameters.Add(new KeyValuePair<string, string>("name", this.GPUs.First().Model));
+                                        this.RetrieveData("- GPU family list", true, "DeviceFamilies/gets", parameters.ToArray(),
+                                            gpuSeriesJson =>
+                                            {
+                                                var gpuSeries = JsonConvert.DeserializeObject<string[]>(gpuSeriesJson);
+
+                                                this.Dispatcher.BeginInvoke(new Action(() =>
+                                                {
+                                                    this.IniaitalizeData(algorithms, gpuSeries);
+                                                }));
+                                            });
+                                    });
+
+
+                            });
+
+                    });
+                }; 
 
         }
 
@@ -72,13 +100,16 @@ namespace DigiHash
 
         private void ShowPreferenceDialog()
         {
-            var dialog = new PreferenceDialog();
-            var perference = dialog.Show(this._dataSource.Preference, this._dataSource.Algorithms);
-            if (perference != null)
+            if (this._dataSource != null)
             {
-                this._dataSource.Preference = perference;
-                if (this._dataSource.Preference.IsValid)
-                    this.SavePreference();
+                var dialog = new PreferenceDialog();
+                var perference = dialog.Show(this, this._dataSource);
+                if (perference != null)
+                {
+                    this._dataSource.Preference = perference;
+                    if (this._dataSource.Preference.IsValid)
+                        this.SavePreference();
+                }
             }
         }
 
@@ -121,25 +152,21 @@ namespace DigiHash
             });
         }
 
-        private void Start()
-        {
-            this._dataSource.Started = true;
-            var result = true;
-            Task.Run(() =>
-            {
-                var cpus = this.Execute(MessageType.System, "Getting CPU info", true, () => Hardware.GetCPUs());
-                var gpus = this.Execute(MessageType.System, "Getting GPU info", true, () => Hardware.GetGPUs());
+        internal GPU[] GPUs { get; set; }
+        internal CPU[] CPUs { get; set; }
 
-                var spec = new
+        internal void RetrieveMinerSetting(Preference preference, Action<MinerConfig> success, Action<string> fail = null)
+        {
+            var spec = new
                 {
-                    algorithm = this._dataSource.Preference.Algorithm,
-                    username = this._dataSource.Preference.Wallet,
+                    algorithm = preference.Algorithm,
+                    username = preference.Wallet,
                     platform = new
                     {
                         name = "WINDOWS_X" + (Environment.Is64BitOperatingSystem ? "64" : "32"),
                         version = string.Format("{0}.{1}", Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Minor)
                     },
-                    cpu = cpus.Select(current => new
+                    cpu = this.CPUs.Select(current => new
                     {
                         name = current.Model,
                         clock = current.Clock,
@@ -147,16 +174,29 @@ namespace DigiHash
                         number_of_cores = current.NumberOfCores,
                         number_of_logical_processors = current.NumberOfLogicalProcessors,
                     }).First(),
-                    gpu = gpus.Select(current => new { name = current.Model, manufacturer = current.Manufacturer }).First(),
+                    gpu = this.GPUs.Select(current => new { name = preference.GPUModel ?? current.Model, manufacturer = current.Manufacturer }).First(),
                 };
 
-                this.PostData("Analyzing hardware from server", true, "MinerConfigs/analyze", JsonConvert.SerializeObject(new { spec }),
-                    json =>
+            this.PostData("Analyzing hardware from server", true, "MinerConfigs/analyze", JsonConvert.SerializeObject(new { spec }),
+                json =>
+                {
+                    var config = JsonConvert.DeserializeObject<MinerConfig>(json);
+                    success(config);
+                }, fail);
+        }
+
+        private void Start()
+        {
+            this._dataSource.Started = true;            
+            Task.Run(() =>
+            {
+                var runMiner = new Action<MinerConfig>(
+                    config =>
                     {
-                        var config = JsonConvert.DeserializeObject<MinerConfig>(json);
+                        var result = true;
                         var miner = string.Format("Miner: {0}, Version: {1}", config.Miner, config.Version);
                         this.Output(MessageType.System, miner + "\n");
-                        
+
                         var save = config.ID != this._dataSource.Preference.ConfigID;
                         if (config.Device == MinerDevice.GPU && !string.IsNullOrEmpty(config.SDK_URL))
                         {
@@ -171,7 +211,7 @@ namespace DigiHash
                                         {
                                             try
                                             {
-                                               Process.Start(config.SDK_URL);
+                                                Process.Start(config.SDK_URL);
                                             }
                                             catch (Win32Exception)
                                             {
@@ -257,10 +297,16 @@ namespace DigiHash
                             {
                                 result = this.Execute(MessageType.System, "Starting Mining\n", false, () =>
                                 {
-                                    this.Output(MessageType.System, "Arguments: " + config.Parameters + "\n");
+                                    var configParamates = config.Config_Parameters;
+                                    if (this._dataSource.Preference.OverrideSetting)
+                                        configParamates = this._dataSource.Preference.Config.Config_Parameters;
+
+                                    var parameters = config.Base_Parameters + " " + configParamates;
+
+                                    this.Output(MessageType.System, "Arguments: " + parameters + "\n");
                                     this._dataSource.Miner = new Process();
                                     this._dataSource.Miner.StartInfo.WorkingDirectory = localPath;
-                                    this._dataSource.Miner.StartInfo.Arguments = config.Parameters;
+                                    this._dataSource.Miner.StartInfo.Arguments = parameters;
                                     this._dataSource.Miner.StartInfo.FileName = minerFile.FullName;
                                     this._dataSource.Miner.StartInfo.UseShellExecute = false;
                                     this._dataSource.Miner.StartInfo.CreateNoWindow = true;
@@ -294,21 +340,46 @@ namespace DigiHash
                         }
                         else
                             this._dataSource.Started = false;
+                    });
+
+                this.RetrieveMinerSetting(this._dataSource.Preference,
+                    config =>
+                    {
+                        var currentConfig = config;
+                        //Use local config
+                        if (this._dataSource.Preference.OverrideSetting)
+                        {                            
+                            currentConfig = this._dataSource.Preference.Config;
+
+                            //Check the config changed
+                            if (this._dataSource.Preference.ConfigID != config.ID)
+                            {
+                                var dialogResult = MessageBox.Show("The best setting already updated, do you want to use the setting?", "Miner Setting", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                                if (dialogResult == MessageBoxResult.Yes)
+                                {
+                                    currentConfig = config;
+                                    this._dataSource.Preference.OverrideSetting = false;
+                                }
+                            }
+                        }
+
+                        //Run miner
+                        runMiner(currentConfig);
                     },
-                    json => 
+                    json =>
+                    {
+                        this.Execute(MessageType.Error, "Server error:", false, () =>
                         {
-                            this.Execute(MessageType.Error, "Server error:", false, () =>
-                                {                                    
-                                    var info = JsonConvert.DeserializeObject<NoMatchConfig>(json);                                    
-                                    if (this._dataSource.Preference.ConfigID != info.ID)
-                                    {
-                                        this._dataSource.Preference.ConfigID = info.ID;
-                                        this.SavePreference();
-                                    }
-                                    this.Output(MessageType.Error, info.Message);
-                                    this.ForceStop();
-                                });
+                            var info = JsonConvert.DeserializeObject<NoMatchConfig>(json);
+                            if (this._dataSource.Preference.ConfigID != info.ID)
+                            {
+                                this._dataSource.Preference.ConfigID = info.ID;
+                                this.SavePreference();
+                            }
+                            this.Output(MessageType.Error, info.Message);
+                            this.ForceStop();
                         });
+                    });
             });
         }
 
@@ -321,10 +392,10 @@ namespace DigiHash
             return System.IO.Path.Combine(root, filename);
         }
 
-        private void IniaitalizeData(Algorithm[] algoritms)
+        private void IniaitalizeData(Algorithm[] algoritms, string[] gpuSeries)
         {            
             this.Output(MessageType.System, "Initialize....\n");
-            this._dataSource = new DataSource() { Algorithms = algoritms };
+            this._dataSource = new DataSource() { Algorithms = algoritms, GPUSeries = gpuSeries };
             this.DataContext = this._dataSource;
 
             var fileName = this.GetFullPath(Preference.FileName);
@@ -377,7 +448,7 @@ namespace DigiHash
                 });
         }
 
-        private void RetrieveData(string message, bool withStatus, string url, KeyValuePair<string, object>[] parameters, Action<string> success, Action<string> fail = null)
+        internal void RetrieveData(string message, bool withStatus, string url, KeyValuePair<string, string>[] parameters, Action<string> success, Action<string> fail = null)
         {
             this.Output(MessageType.Server, message + (withStatus ? ".........." : "\n"));
             this.TaskbarProgressState(TaskbarItemProgressState.Indeterminate);
@@ -500,6 +571,7 @@ namespace DigiHash
         public class DataSource : DataSourceBase
         {
             private Algorithm[] _algorithms;
+            private string[] _gpuSeries;
             private KeyValuePair<string, decimal>[] _difficulties;
             private Process _miner;
             private bool _started;
@@ -541,6 +613,16 @@ namespace DigiHash
                 set
                 {
                     this._algorithms = value;
+                    this.OnPropertyChange();
+                }
+            }
+
+            public string[] GPUSeries
+            {
+                get { return this._gpuSeries; }
+                set
+                {
+                    this._gpuSeries = value;
                     this.OnPropertyChange();
                 }
             }

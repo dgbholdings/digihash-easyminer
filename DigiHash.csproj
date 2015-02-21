@@ -70,6 +70,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BooleanConverter.cs" />
     <Compile Include="DataSourceBase.cs" />
     <Compile Include="FTPClient.cs" />
     <Compile Include="Hardware.cs" />

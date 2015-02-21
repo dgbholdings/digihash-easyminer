@@ -13,6 +13,11 @@ namespace DigiHash
         private string _wallet;
         private string _algorithm;
         private bool _installedSDK;
+        private string _gpuModel;
+        private MinerConfig _config;
+        private bool _overrideSetting;
+        private int _configID;
+
 
         public string Wallet
         {
@@ -41,7 +46,42 @@ namespace DigiHash
                 this.OnPropertyChange();
             }
         }
-        public int ConfigID { get; set; }
+        public int ConfigID
+        {
+            get { return this._configID; }
+            set
+            {
+                this._configID = value;
+                this.OnPropertyChange();
+            }
+        }
+        public string GPUModel
+        {
+            get { return this._gpuModel; }
+            set
+            {
+                this._gpuModel = value;
+                this.OnPropertyChange();
+            }
+        }
+        public bool OverrideSetting
+        {
+            get { return this._overrideSetting; }
+            set
+            {
+                this._overrideSetting = value;
+                this.OnPropertyChange();
+            }
+        }
+        public MinerConfig Config
+        {
+            get { return this._config; }
+            set
+            {
+                this._config = value;
+                this.OnPropertyChange();
+            }
+        }
 
         public bool IsValid
         {
@@ -53,6 +93,7 @@ namespace DigiHash
             return this.MemberwiseClone();
         }
     }
+
 
     public class Algorithm
     {
@@ -70,7 +111,8 @@ namespace DigiHash
         public string Miner { get; set; }
         public string Version { get; set; }
         public string Execute_File { get; set; }
-        public string Parameters { get; set; }
+        public string Base_Parameters { get; set; }
+        public string Config_Parameters { get; set; }
         public MinerDevice Device { get; set; }
         public string SDK_URL { get; set; }
         public Protocol Source_Protocol { get; set; }
