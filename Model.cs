@@ -111,6 +111,7 @@ namespace DigiHash
         public string Miner { get; set; }
         public string Version { get; set; }
         public string Execute_File { get; set; }
+        public KeyValuePair<string, string>[] Environment_Variables { get; set; }
         public string Base_Parameters { get; set; }
         public string Config_Parameters { get; set; }
         public MinerDevice Device { get; set; }

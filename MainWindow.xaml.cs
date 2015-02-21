@@ -297,6 +297,7 @@ namespace DigiHash
                             {
                                 result = this.Execute(MessageType.System, "Starting Mining\n", false, () =>
                                 {
+                                    //Parameters
                                     var configParamates = config.Config_Parameters;
                                     if (this._dataSource.Preference.OverrideSetting)
                                         configParamates = this._dataSource.Preference.Config.Config_Parameters;
@@ -305,6 +306,18 @@ namespace DigiHash
 
                                     this.Output(MessageType.System, "Arguments: " + parameters + "\n");
                                     this._dataSource.Miner = new Process();
+
+                                    //Environment_Variables
+                                    if (config.Environment_Variables != null)
+                                    {
+                                        foreach (var variable in config.Environment_Variables)
+                                        {
+                                            this.Output(MessageType.System, "Variable: " + variable.Key + "=" + variable.Value + "\n");
+                                            this._dataSource.Miner.StartInfo.EnvironmentVariables[variable.Key] = variable.Value;
+                                        }
+                                    }
+
+                                    //Other
                                     this._dataSource.Miner.StartInfo.WorkingDirectory = localPath;
                                     this._dataSource.Miner.StartInfo.Arguments = parameters;
                                     this._dataSource.Miner.StartInfo.FileName = minerFile.FullName;
