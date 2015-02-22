@@ -50,19 +50,19 @@
                                  IsChecked="{Binding Path=Preference.OverrideSetting, Mode=TwoWay, Converter={StaticResource BooleanConverter}, ConverterParameter=True}"  />
 
             <Button x:Name="RetrieveSettingButton" Content="Reload Setting From Server" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
-            <TextBox Text="{Binding Path=Preference.Config.Miner, Mode=TwoWay}" Margin="20,0,20,0" IsReadOnly="True" Style="{StaticResource ReadySelector}"/>
+            <TextBox Text="{Binding Path=Preference.Config.Summary, Mode=OneWay}" Margin="20,0,20,0" IsReadOnly="True" Style="{StaticResource ReadySelector}"/>
             <TextBlock Text="Pamaeters:" Margin="20,0,0,0"/>
             <TextBox Text="{Binding Path=Preference.Config.Config_Parameters, Mode=TwoWay}" Margin="20,0,20,0" Style="{StaticResource ReadySelector}"/>        
         </StackPanel>
 
 
-        <TextBlock Text="Config ID:" Grid.Row="4" Grid.Column="0" Margin="5"/>
+        <TextBlock Text="Hardware ID:" Grid.Row="4" Grid.Column="0" Margin="5"/>
         <Grid Grid.Row="4" Grid.Column="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding Path=Preference.ConfigID, Mode=OneWay}"  Grid.Row="0" Grid.Column="0"  Margin="5" IsReadOnly="True"/>
+            <TextBox Text="{Binding Path=Preference.HardwareID, Mode=OneWay}"  Grid.Row="0" Grid.Column="0"  Margin="5" IsReadOnly="True"/>
             <CheckBox IsChecked="{Binding Path=Preference.InstalledSDK, Mode=TwoWay}"  Grid.Row="0" Grid.Column="1"  Margin="5" VerticalAlignment="Center">Installed SDK</CheckBox>
         </Grid>
 

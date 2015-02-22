@@ -194,10 +194,9 @@ namespace DigiHash
                     config =>
                     {
                         var result = true;
-                        var miner = string.Format("Miner: {0}, Version: {1}", config.Miner, config.Version);
-                        this.Output(MessageType.System, miner + "\n");
+                        this.Output(MessageType.System, config.Summary + "\n");
 
-                        var save = config.ID != this._dataSource.Preference.ConfigID;
+                        var save = config.Hardware_ID != this._dataSource.Preference.HardwareID;
                         if (config.Device == MinerDevice.GPU && !string.IsNullOrEmpty(config.SDK_URL))
                         {
                             if (!this._dataSource.Preference.InstalledSDK)
@@ -232,7 +231,7 @@ namespace DigiHash
 
                         if (save)
                         {
-                            this._dataSource.Preference.ConfigID = config.ID;
+                            this._dataSource.Preference.HardwareID = config.Hardware_ID;
                             result = this.SavePreference();
                         }
 
@@ -365,7 +364,7 @@ namespace DigiHash
                             currentConfig = this._dataSource.Preference.Config;
 
                             //Check the config changed
-                            if (this._dataSource.Preference.ConfigID != config.ID)
+                            if (currentConfig.ID != config.ID)
                             {
                                 var dialogResult = MessageBox.Show("The best setting already updated, do you want to use the setting?", "Miner Setting", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
                                 if (dialogResult == MessageBoxResult.Yes)
@@ -384,9 +383,9 @@ namespace DigiHash
                         this.Execute(MessageType.Error, "Server error:", false, () =>
                         {
                             var info = JsonConvert.DeserializeObject<NoMatchConfig>(json);
-                            if (this._dataSource.Preference.ConfigID != info.ID)
+                            if (this._dataSource.Preference.HardwareID != info.ID)
                             {
-                                this._dataSource.Preference.ConfigID = info.ID;
+                                this._dataSource.Preference.HardwareID = info.ID;
                                 this.SavePreference();
                             }
                             this.Output(MessageType.Error, info.Message);

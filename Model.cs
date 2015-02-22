@@ -16,8 +16,7 @@ namespace DigiHash
         private string _gpuModel;
         private MinerConfig _config;
         private bool _overrideSetting;
-        private int _configID;
-
+        private int _hardwareID;
 
         public string Wallet
         {
@@ -46,12 +45,12 @@ namespace DigiHash
                 this.OnPropertyChange();
             }
         }
-        public int ConfigID
+        public int HardwareID
         {
-            get { return this._configID; }
+            get { return this._hardwareID; }
             set
             {
-                this._configID = value;
+                this._hardwareID = value;
                 this.OnPropertyChange();
             }
         }
@@ -108,6 +107,7 @@ namespace DigiHash
         public const string RootPath = "Miner";
 
         public int ID { get; set; }
+        public int Hardware_ID { get; set; }
         public string Miner { get; set; }
         public string Version { get; set; }
         public string Execute_File { get; set; }
@@ -152,6 +152,14 @@ namespace DigiHash
                 var miner = this.Miner.Replace(':', '_').Replace('\\', '_');
 
                 return string.Format(@"{0}\{1}\{2}", MinerConfig.RootPath, miner, this.Version);
+            }
+        }
+
+        public string Summary
+        {
+            get
+            {
+                return string.Format("Config: {0}, Miner: {1}, Version: {2}", this.ID, this.Miner, this.Version);
             }
         }
     }

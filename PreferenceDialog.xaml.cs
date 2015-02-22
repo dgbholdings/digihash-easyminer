@@ -76,7 +76,7 @@ namespace DigiHash
                             config =>
                             {
                                 this._dataSource.Preference.Config = config;
-                                this._dataSource.Preference.ConfigID = config.ID;
+                                this._dataSource.Preference.HardwareID = config.Hardware_ID;
                             });
                     }
                 };
