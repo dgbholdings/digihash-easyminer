@@ -18,6 +18,8 @@ namespace DigiHash
         private bool _overrideSetting;
         private int _hardwareID;
 
+        public Guid ID { get; set; }
+
         public string Wallet
         {
             get { return this._wallet; }
@@ -111,7 +113,7 @@ namespace DigiHash
         public string Miner { get; set; }
         public string Version { get; set; }
         public string Execute_File { get; set; }
-        public KeyValuePair<string, string>[] Environment_Variables { get; set; }
+        public Parameter[] Environment_Variables { get; set; }
         public string Base_Parameters { get; set; }
         public string Config_Parameters { get; set; }
         public MinerDevice Device { get; set; }
@@ -162,5 +164,11 @@ namespace DigiHash
                 return string.Format("Config: {0}, Miner: {1}, Version: {2}", this.ID, this.Miner, this.Version);
             }
         }
+    }
+
+    public class Parameter
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
     }
 }

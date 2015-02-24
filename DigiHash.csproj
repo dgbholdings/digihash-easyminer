@@ -72,6 +72,9 @@
     </ApplicationDefinition>
     <Compile Include="BooleanConverter.cs" />
     <Compile Include="DataSourceBase.cs" />
+    <Compile Include="EnvironmentVariableDialog.xaml.cs">
+      <DependentUpon>EnvironmentVariableDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="FTPClient.cs" />
     <Compile Include="Hardware.cs" />
     <Compile Include="IsNullConverter.cs" />
@@ -80,6 +83,10 @@
     <Compile Include="PreferenceDialog.xaml.cs">
       <DependentUpon>PreferenceDialog.xaml</DependentUpon>
     </Compile>
+    <Page Include="EnvironmentVariableDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

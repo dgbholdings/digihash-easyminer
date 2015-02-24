@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -80,6 +81,42 @@ namespace DigiHash
                             });
                     }
                 };
+            this.EnvironmentVariableButton.Click += (sender, eventArgs) =>
+                {
+                    var dialog = new EnvironmentVariableDialog();
+                    this._dataSource.Preference.Config.Environment_Variables = dialog.Show(this._dataSource.Preference.Config.Environment_Variables);
+                };
+            this.SubmitConfigButton.Click += (sender, eventArgs) =>
+            {
+                var cursor = this.Cursor;
+                this.Cursor = Cursors.Wait;
+                this.IsEnabled = false;
+                var suggestion = new
+                {
+                    submitter_uuid = this._dataSource.Preference.ID,
+                    hardware_id = this._dataSource.Preference.HardwareID,
+                    miner_config_id = this._dataSource.Preference.Config.ID,
+                    parameters = this._dataSource.Preference.Config.Config_Parameters,
+                    environment_variables = this._dataSource.Preference.Config.Environment_Variables == null ||
+                                            this._dataSource.Preference.Config.Environment_Variables.Length == 0 ? null :
+                                            string.Join(",", (from current in this._dataSource.Preference.Config.Environment_Variables
+                                                               select current.Name + "=" + current.Value).ToArray())
+                };
+
+                this._window.PostData("Submitting configuration", true, "config_suggestions", JsonConvert.SerializeObject(new { config_suggestion = suggestion }),
+                    json =>
+                    {
+                        MessageBox.Show("Thank you for you help!", "Submit Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        this.Cursor = cursor;
+                        this.IsEnabled = true;
+                    },
+                    error =>
+                    {
+                        MessageBox.Show(error, "Submit Fail", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        this.Cursor = cursor;
+                        this.IsEnabled = true;
+                    });
+            };
         }
 
         public Preference Show(MainWindow window, MainWindow.DataSource dataSource)
@@ -89,7 +126,7 @@ namespace DigiHash
             {
                 Algorithms = dataSource.Algorithms,
                 GPUSeries = dataSource.GPUSeries,
-                Preference = dataSource.Preference == null ? new Preference() : (Preference)dataSource.Preference.Clone()
+                Preference = dataSource.Preference == null ? new Preference() { ID = Guid.NewGuid() } : (Preference)dataSource.Preference.Clone()
             };
 
             if (this._dataSource.Preference.GPUModel == null)

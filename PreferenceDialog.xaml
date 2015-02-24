@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:digihash="clr-namespace:DigiHash"
         WindowStyle="ToolWindow"
-        Title="Preference" Height="330" Width="400" WindowStartupLocation="CenterScreen">
+        Title="Preference" Height="380" Width="400" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <digihash:BooleanConverter x:Key="BooleanConverter" />
     </Window.Resources>
@@ -12,7 +12,7 @@
             <RowDefinition Height="32" />
             <RowDefinition Height="32" />
             <RowDefinition Height="32" />
-            <RowDefinition Height="130" />
+            <RowDefinition Height="180" />
             <RowDefinition Height="32" />            
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -51,11 +51,11 @@
 
             <Button x:Name="RetrieveSettingButton" Content="Reload Setting From Server" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
             <TextBox Text="{Binding Path=Preference.Config.Summary, Mode=OneWay}" Margin="20,0,20,0" IsReadOnly="True" Style="{StaticResource ReadySelector}"/>
-            <TextBlock Text="Pamaeters:" Margin="20,0,0,0"/>
-            <TextBox Text="{Binding Path=Preference.Config.Config_Parameters, Mode=TwoWay}" Margin="20,0,20,0" Style="{StaticResource ReadySelector}"/>        
+            <TextBlock Text="Parameters:" Margin="20,0,0,0"/>
+            <TextBox Text="{Binding Path=Preference.Config.Config_Parameters, Mode=TwoWay}" Margin="20,0,20,5" Style="{StaticResource ReadySelector}"/>
+            <Button x:Name="EnvironmentVariableButton" Content="Environment Variables" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
+            <Button x:Name="SubmitConfigButton" Content="Submit My Configuration" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
         </StackPanel>
-
-
         <TextBlock Text="Hardware ID:" Grid.Row="4" Grid.Column="0" Margin="5"/>
         <Grid Grid.Row="4" Grid.Column="1">
             <Grid.ColumnDefinitions>

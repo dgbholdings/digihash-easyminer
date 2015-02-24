@@ -311,8 +311,8 @@ namespace DigiHash
                                     {
                                         foreach (var variable in config.Environment_Variables)
                                         {
-                                            this.Output(MessageType.System, "Variable: " + variable.Key + "=" + variable.Value + "\n");
-                                            this._dataSource.Miner.StartInfo.EnvironmentVariables[variable.Key] = variable.Value;
+                                            this.Output(MessageType.System, "Variable: " + variable.Name + "=" + variable.Value + "\n");
+                                            this._dataSource.Miner.StartInfo.EnvironmentVariables[variable.Name] = variable.Value;
                                         }
                                     }
 
@@ -419,6 +419,13 @@ namespace DigiHash
                         var json = File.ReadAllText(fileName);
                         return JsonConvert.DeserializeObject<Preference>(json);
                     });
+
+                if (this._dataSource.Preference.ID == Guid.Empty)
+                {
+                    this._dataSource.Preference.ID = Guid.NewGuid();
+                    this.Output(MessageType.System, "Migration preference struct\n");
+                    this.SavePreference();
+                }
             }
 
             if (this._dataSource.Preference == null || string.IsNullOrEmpty(this._dataSource.Preference.Wallet) || string.IsNullOrEmpty(this._dataSource.Preference.Algorithm))
@@ -430,7 +437,7 @@ namespace DigiHash
             this.Dispatcher.BeginInvoke(new Action(() => this.TaskbarItemInfo.ProgressState = state), null);
         }
 
-        private void PostData(string message, bool withStatus, string url, string json, Action<string> success, Action<string> fail = null)
+        public void PostData(string message, bool withStatus, string url, string json, Action<string> success, Action<string> fail = null)
         {            
             this.Output(MessageType.Server, message + (withStatus ? ".........." : "\n"));
             this.TaskbarProgressState(TaskbarItemProgressState.Indeterminate);            
