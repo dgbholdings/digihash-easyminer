@@ -56,8 +56,11 @@ namespace DigiHash
                 };
             this.Closing += (sender, eventArgs) =>
                 {
-                    this.Stop();
-                    eventArgs.Cancel = this._dataSource.Miner != null;
+                    if (this._dataSource != null)
+                    {
+                        this.Stop();
+                        eventArgs.Cancel = this._dataSource.Miner != null;
+                    }
                 };
             this.Loaded += (sender, eventArgs) => 
                 {
@@ -428,7 +431,11 @@ namespace DigiHash
                 }
             }
 
-            if (this._dataSource.Preference == null || string.IsNullOrEmpty(this._dataSource.Preference.Wallet) || string.IsNullOrEmpty(this._dataSource.Preference.Algorithm))
+            var showDialog = this._dataSource.Preference == null || string.IsNullOrEmpty(this._dataSource.Preference.Wallet) || string.IsNullOrEmpty(this._dataSource.Preference.Algorithm);
+            if (!showDialog && gpuSeries != null && gpuSeries.Length > 0)
+                showDialog = !gpuSeries.Any(current => current == this._dataSource.Preference.GPUModel);
+
+            if (showDialog)
                 this.ShowPreferenceDialog();
         }
 

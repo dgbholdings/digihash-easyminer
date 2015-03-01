@@ -12,7 +12,7 @@
             <RowDefinition Height="32" />
             <RowDefinition Height="32" />
             <RowDefinition Height="32" />
-            <RowDefinition Height="180" />
+            <RowDefinition Height="190" />
             <RowDefinition Height="32" />            
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -54,7 +54,7 @@
             <TextBlock Text="Parameters:" Margin="20,0,0,0"/>
             <TextBox Text="{Binding Path=Preference.Config.Config_Parameters, Mode=TwoWay}" Margin="20,0,20,5" Style="{StaticResource ReadySelector}"/>
             <Button x:Name="EnvironmentVariableButton" Content="Environment Variables" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
-            <Button x:Name="SubmitConfigButton" Content="Submit My Configuration" Margin="20,0,20,5"  Style="{StaticResource ReadySelector}" />
+            <Button x:Name="SubmitConfigButton" Content="Submit My Configuration" Margin="20,0,20,10"  Style="{StaticResource ReadySelector}" />
         </StackPanel>
         <TextBlock Text="Hardware ID:" Grid.Row="4" Grid.Column="0" Margin="5"/>
         <Grid Grid.Row="4" Grid.Column="1">

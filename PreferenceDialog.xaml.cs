@@ -57,30 +57,7 @@ namespace DigiHash
                         this.Close();
                     }
                 };
-            this.RetrieveSettingButton.Click += (sender, eventArgs) =>
-                {
-                    var isValid = true;
-                    if (string.IsNullOrEmpty(this._dataSource.Preference.Wallet))
-                    {
-                        isValid = false;
-                        MessageBox.Show("Wallet cannot be empty", "Validation", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    else if (string.IsNullOrEmpty(this._dataSource.Preference.Algorithm))
-                    {
-                        isValid = false;
-                        MessageBox.Show("Algorithm cannot be empty", "Validation", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-
-                    if (isValid)
-                    {
-                        this._window.RetrieveMinerSetting(this._dataSource.Preference,
-                            config =>
-                            {
-                                this._dataSource.Preference.Config = config;
-                                this._dataSource.Preference.HardwareID = config.Hardware_ID;
-                            });
-                    }
-                };
+            this.RetrieveSettingButton.Click += (sender, eventArgs) => this.RetrieveMinerSetting();
             this.EnvironmentVariableButton.Click += (sender, eventArgs) =>
                 {
                     var dialog = new EnvironmentVariableDialog();
@@ -117,6 +94,73 @@ namespace DigiHash
                         this.IsEnabled = true;
                     });
             };
+            this.AlgorithmComboBox.SelectionChanged += (sender, eventArgs) =>
+                {
+                    if (this._dataSource.Preference.OverrideSetting && this._dataSource.Preference.Algorithm != this._dataSource.OriginalAlgorithm)
+                    {
+                        var result = MessageBox.Show("You need to reload configuration and will lost their existing overrides", "Configuration Changed", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            this.RetrieveMinerSetting();
+                            this._dataSource.OriginalAlgorithm = this._dataSource.Preference.Algorithm;
+                        }
+                        else
+                            this._dataSource.Preference.Algorithm = this._dataSource.OriginalAlgorithm;
+                    }
+                };
+
+            this.GPUComboBox.SelectionChanged += (sender, eventArgs) =>
+            {
+                if (this._dataSource.Preference.OverrideSetting && this._dataSource.Preference.GPUModel != this._dataSource.OriginalGPUModel)
+                {
+                    var result = MessageBox.Show("You need to reload configuration and will lost their existing overrides", "Configuration Changed", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        this.RetrieveMinerSetting();
+                        this._dataSource.OriginalGPUModel = this._dataSource.Preference.GPUModel;
+                    }
+                    else
+                        this._dataSource.Preference.GPUModel = this._dataSource.OriginalGPUModel;
+                }
+            };
+        }
+
+        private void RetrieveMinerSetting()
+        {
+            var isValid = true;
+            if (string.IsNullOrEmpty(this._dataSource.Preference.Wallet))
+            {
+                isValid = false;
+                MessageBox.Show("Wallet cannot be empty", "Validation", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else if (string.IsNullOrEmpty(this._dataSource.Preference.Algorithm))
+            {
+                isValid = false;
+                MessageBox.Show("Algorithm cannot be empty", "Validation", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            if (isValid)
+            {
+                var cursor = this.Cursor;
+                this.Cursor = Cursors.Wait;
+                this.IsEnabled = false;
+
+                this._window.RetrieveMinerSetting(this._dataSource.Preference,
+                    config =>
+                    {
+                        this._dataSource.Preference.Config = config;
+                        this._dataSource.Preference.HardwareID = config.Hardware_ID;
+                        this.Cursor = cursor;
+                        this.IsEnabled = true;                    
+                    },
+                    error =>
+                    {
+                        MessageBox.Show(error, "Retrive Fail", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                        this.Cursor = cursor;
+                        this.IsEnabled = true;
+                    });
+            }
+
         }
 
         public Preference Show(MainWindow window, MainWindow.DataSource dataSource)
@@ -126,7 +170,9 @@ namespace DigiHash
             {
                 Algorithms = dataSource.Algorithms,
                 GPUSeries = dataSource.GPUSeries,
-                Preference = dataSource.Preference == null ? new Preference() { ID = Guid.NewGuid() } : (Preference)dataSource.Preference.Clone()
+                Preference = dataSource.Preference == null ? new Preference() { ID = Guid.NewGuid() } : (Preference)dataSource.Preference.Clone(),
+                OriginalAlgorithm = dataSource.Preference.Algorithm,
+                OriginalGPUModel = dataSource.Preference.GPUModel
             };
 
             if (this._dataSource.Preference.GPUModel == null)
@@ -147,6 +193,9 @@ namespace DigiHash
             private Algorithm[] _algorithms;
             private string[] _gpuSeries;
             private Preference _preference;
+
+            public string OriginalAlgorithm { get; set; }
+            public string OriginalGPUModel { get; set; }
 
             public Preference Preference
             {

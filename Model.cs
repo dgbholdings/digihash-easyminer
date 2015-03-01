@@ -166,9 +166,35 @@ namespace DigiHash
         }
     }
 
-    public class Parameter
+    public class Parameter : DataSourceBase, ICloneable
     {
-        public string Name { get; set; }
-        public string Value { get; set; }
+        private string _name;
+        private string _value;
+
+        public string Name
+        {
+            get { return this._name; }
+            set
+            {
+                this._name = value;
+                this.OnPropertyChange();
+            }
+
+        }
+        public string Value
+        {
+            get { return this._value; }
+            set
+            {
+                this._value = value;
+                this.OnPropertyChange();
+            }
+
+        }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 }
