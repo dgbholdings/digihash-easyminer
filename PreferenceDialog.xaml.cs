@@ -171,8 +171,8 @@ namespace DigiHash
                 Algorithms = dataSource.Algorithms,
                 GPUSeries = dataSource.GPUSeries,
                 Preference = dataSource.Preference == null ? new Preference() { ID = Guid.NewGuid() } : (Preference)dataSource.Preference.Clone(),
-                OriginalAlgorithm = dataSource.Preference.Algorithm,
-                OriginalGPUModel = dataSource.Preference.GPUModel
+                OriginalAlgorithm = dataSource.Preference == null? null: dataSource.Preference.Algorithm,
+                OriginalGPUModel = dataSource.Preference == null ? null : dataSource.Preference.GPUModel
             };
 
             if (this._dataSource.Preference.GPUModel == null)

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:digihash="clr-namespace:DigiHash"
         WindowStyle="ToolWindow"
-        Title="Preference" Height="380" Width="400" WindowStartupLocation="CenterScreen">
+        Title="Preference" Height="400" Width="400" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <digihash:BooleanConverter x:Key="BooleanConverter" />
     </Window.Resources>
