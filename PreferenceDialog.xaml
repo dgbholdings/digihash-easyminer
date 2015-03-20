@@ -17,13 +17,13 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="90"/>
+            <ColumnDefinition Width="130"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="Wallet:" Grid.Row="0" Grid.Column="0" Margin="5"/>
+        <TextBlock Text="My DGB Address:" Grid.Row="0" Grid.Column="0" Margin="5"/>
         <TextBox Text="{Binding Path=Preference.Wallet, Mode=TwoWay}"  Grid.Row="0" Grid.Column="1"  Margin="5"/>
 
-        <TextBlock Text="Algorithm:" Grid.Row="1" Grid.Column="0" Margin="5"/>
+        <TextBlock Text="Choose My Algorithm:" Grid.Row="1" Grid.Column="0" Margin="5"/>
         <ComboBox x:Name="AlgorithmComboBox" ItemsSource="{Binding Path=Algorithms}" Grid.Row="1" Grid.Column="1"  Margin="5" DisplayMemberPath="Name" SelectedValuePath="Name" 
                   SelectedValue="{Binding Path=Preference.Algorithm, Mode=TwoWay}" UseLayoutRounding="False"/>
 
@@ -43,8 +43,8 @@
 
                 </ResourceDictionary>
             </StackPanel.Resources>
-            
-            <RadioButton Content="Let server determine best settings" GroupName="Miner" 
+
+            <RadioButton Content="Let EasyMiner determine my configuration" GroupName="Miner" 
                                  IsChecked="{Binding Path=Preference.OverrideSetting, Mode=TwoWay, Converter={StaticResource BooleanConverter}, ConverterParameter=False}"  />
             <RadioButton x:Name="OverrideSetingRadioButton" Content="Let me override configuration" GroupName="Miner" 
                                  IsChecked="{Binding Path=Preference.OverrideSetting, Mode=TwoWay, Converter={StaticResource BooleanConverter}, ConverterParameter=True}"  />

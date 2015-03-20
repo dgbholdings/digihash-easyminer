@@ -120,7 +120,7 @@ namespace DigiHash
         {
             if (this._dataSource != null && this._dataSource.Miner != null)
             {
-                var result = MessageBox.Show("It will be stop the mining, are you sure?", "Terminal Mining",  MessageBoxButton.OKCancel, MessageBoxImage.Question);
+                var result = MessageBox.Show("Are you sure you would like to stop mining?", "Terminal Mining", MessageBoxButton.OKCancel, MessageBoxImage.Question);
                 if (result == MessageBoxResult.OK)
                     this.ForceStop();
             }
@@ -204,7 +204,7 @@ namespace DigiHash
                         {
                             if (!this._dataSource.Preference.InstalledSDK)
                             {
-                                var dialogResult = MessageBox.Show("Do you has video card SDK install?", "Install SDK", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                                var dialogResult = MessageBox.Show("Do you have an SDK for your video card installed?", "Install SDK", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
                                 if (dialogResult == MessageBoxResult.No)
                                 {
                                     result = false;
